@@ -45,6 +45,7 @@
 #include "telemetry.hpp"
 #include "button.hpp"
 #include "buzzer.h"
+#include "BLEHandler.hpp"
 
 // モータPWM出力Pinのアサイン
 // Motor PWM Pin
@@ -212,6 +213,9 @@ volatile float Alt_ref = Alt_ref0;
 uint8_t ahrs_reset_flag      = 0;
 uint8_t last_ahrs_reset_flag = 0;
 
+// BLE For sending telemetry data to PC
+BLEHandler bleHandler;
+
 // Function declaration
 void init_pwm();
 void control_init();
@@ -266,6 +270,10 @@ void init_copter(void) {
     // PID GAIN and etc. Init
     control_init();
 
+    // Initialize BLE for sending sensor data to PC
+    bleHandler.initBLE();
+    USBSerial.printf("Finish BLE init!\r\n");
+
     // Initilize Radio control
     rc_init();
 
@@ -306,6 +314,12 @@ void loop_400Hz(void) {
 
     // LED Drive
     led_drive();
+
+    // If BLE connection is established, then send sensor data via BLE
+    if (bleHandler.isDeviceConnected()) {
+        bleHandler.sendSensorData();
+    }
+
     // if (Interval_time>0.006)USBSerial.printf("%9.6f\n\r", Interval_time);
     // USBSerial.printf("Mode=%d OverG=%d\n\r", Mode, OverG_flag);
     // Begin Mode select
